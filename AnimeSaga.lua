@@ -198,16 +198,6 @@ local selectedDifficulty = ConfigSystem.CurrentConfig.SelectedDifficulty or 1
 local autoJoinStoryEnabled = ConfigSystem.CurrentConfig.AutoJoinStory or false
 local autoJoinStoryLoop = nil
 
--- Biến lưu trạng thái summon
-local selectedSummonAmount = ConfigSystem.CurrentConfig.SummonAmount or "x1"
-local autoSummonEnabled = ConfigSystem.CurrentConfig.AutoSummon or false
-local autoSummonLoop = nil
-local autoSellRarities = {
-    Rare = ConfigSystem.CurrentConfig.AutoSellRare or false,
-    Epic = ConfigSystem.CurrentConfig.AutoSellEpic or false,
-    Legendary = ConfigSystem.CurrentConfig.AutoSellLegendary or false
-}
-
 -- Tạo Window
 local Window = Fluent:CreateWindow({
     Title = "HT Hub | Anime Saga",
@@ -229,12 +219,6 @@ local InfoTab = Window:AddTab({
 local PlayTab = Window:AddTab({
     Title = "Play",
     Icon = "rbxassetid://7743871480"
-})
-
--- Tạo tab Shop
-local ShopTab = Window:AddTab({
-    Title = "Shop",
-    Icon = "rbxassetid://7734056747"
 })
 
 -- Thêm hỗ trợ Logo khi minimize
@@ -477,229 +461,72 @@ SettingsSection:AddDropdown("ThemeDropdown", {
     end
 })
 
--- Thêm section Redeem Code
-local RedeemSection = SettingsTab:AddSection("Redeem Code")
+-- Thêm section Redeem Codes
+local RedeemSection = SettingsTab:AddSection("Redeem Codes")
 
--- Function để redeem tất cả code
-local function redeemAllCodes()
-    local codes = {"Release", "SorryForDelay", "SorryForShutdown"}
-    
-    for _, code in ipairs(codes) do
-        local success, err = pcall(function()
-            local args = {
-                code
-            }
-            game:GetService("ReplicatedStorage"):WaitForChild("Event"):WaitForChild("Codes"):FireServer(unpack(args))
-            print("Đã redeem code: " .. code)
-            
-            -- Đợi một chút giữa các lần redeem để tránh spam server
-            wait(0.5)
-        end)
-        
-        if not success then
-            warn("Lỗi khi redeem code " .. code .. ": " .. tostring(err))
-        end
-    end
-    
-    print("Đã redeem tất cả các code!")
-end
-
--- Nút để redeem tất cả code
+-- Nút Redeem All Codes
 RedeemSection:AddButton({
     Title = "Redeem All Codes",
     Callback = function()
-        redeemAllCodes()
-    end
-})
-
--- Thêm section Summon trong tab Shop
-local SummonSection = ShopTab:AddSection("Summon")
-
--- Hàm để thực hiện summon
-local function performSummon()
-    local success, err = pcall(function()
-        local summonAmount = selectedSummonAmount -- Lấy trực tiếp giá trị (đã là "1" hoặc "10")
-        local args = {
-            tonumber(summonAmount)
-        }
-        game:GetService("ReplicatedStorage"):WaitForChild("Event"):WaitForChild("Summon"):FireServer(unpack(args))
-        print("Đã summon: " .. summonAmount)
-    end)
-    
-    if not success then
-        warn("Lỗi khi summon: " .. tostring(err))
-    end
-end
-
--- Hàm để mô phỏng một click chuột
-local function simulateClick()
-    local VirtualInputManager = game:GetService("VirtualInputManager")
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
-    local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-    
-    -- Lấy kích thước màn hình hiện tại
-    local guiInset = game:GetService("GuiService"):GetGuiInset()
-    local screenSize = workspace.CurrentCamera.ViewportSize
-    
-    -- Tính toán vị trí trung tâm màn hình (vị trí tốt nhất để click)
-    local centerX = screenSize.X / 2
-    local centerY = screenSize.Y / 2
-    
-    -- Tạo click tại trung tâm màn hình
-    VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
-    wait(0.05) -- Độ trễ nhỏ
-    VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
-    
-    -- Thử click thêm vài vị trí nếu cần thiết (4 góc màn hình)
-    local testPositions = {
-        {X = centerX, Y = centerY}, -- Trung tâm
-        {X = centerX * 0.9, Y = centerY * 1.5}, -- Phía dưới 
-        {X = centerX * 1.5, Y = centerY * 0.9}, -- Phía phải
-        {X = centerX * 0.5, Y = centerY * 0.5}  -- Phía trên bên trái
-    }
-    
-    for _, pos in ipairs(testPositions) do
-        if pos.X > 0 and pos.X < screenSize.X and pos.Y > 0 and pos.Y < screenSize.Y then
-            VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y, 0, true, game, 0)
-            wait(0.05)
-            VirtualInputManager:SendMouseButtonEvent(pos.X, pos.Y, 0, false, game, 0)
-            wait(0.05)
-        end
-    end
-    
-    print("Đã thực hiện click tự động trên màn hình " .. screenSize.X .. "x" .. screenSize.Y)
-end
-
--- Hàm để cập nhật trạng thái Auto Sell
-local function updateAutoSell(rarity, enabled)
-    local success, err = pcall(function()
-        local args = {
-            "AutoSell",
-            rarity
+        local codes = {
+            "Release",
+            "SorryForDelay",
+            "SorryForShutdown",
+            "50KActive",
+            "1MVisits",
+            "InBugSagaWeTrust"
         }
         
-        if enabled then
-            game:GetService("ReplicatedStorage"):WaitForChild("Event"):WaitForChild("Setting"):FireServer(unpack(args))
-            print("Đã bật Auto Sell cho " .. rarity)
-        else
-            -- Nếu tắt, cũng gửi event tương tự để toggle
-            game:GetService("ReplicatedStorage"):WaitForChild("Event"):WaitForChild("Setting"):FireServer(unpack(args))
-            print("Đã tắt Auto Sell cho " .. rarity)
-        end
-    end)
-    
-    if not success then
-        warn("Lỗi khi cập nhật Auto Sell: " .. tostring(err))
-    end
-end
-
--- Dropdown để chọn số lượng summon
-SummonSection:AddDropdown("SummonAmountDropdown", {
-    Title = "Summon",
-    Values = {"1", "10"},
-    Multi = false,
-    Default = selectedSummonAmount,
-    Callback = function(Value)
-        selectedSummonAmount = Value
-        ConfigSystem.CurrentConfig.SummonAmount = Value
-        ConfigSystem.SaveConfig()
-        print("Đã chọn summon amount: " .. Value)
-    end
-})
-
--- Dropdown cho Auto Sell
-SummonSection:AddDropdown("AutoSellDropdown", {
-    Title = "Auto Sell",
-    Values = {"Rare", "Epic", "Legendary"},
-    Multi = true,
-    Default = autoSellRarities,
-    Callback = function(Values)
-        -- Kiểm tra các giá trị đã thay đổi
-        for rarity, newValue in pairs(Values) do
-            if autoSellRarities[rarity] ~= newValue then
-                autoSellRarities[rarity] = newValue
-                updateAutoSell(rarity, newValue)
-            end
-        end
-        
-        -- Cập nhật cấu hình
-        ConfigSystem.CurrentConfig.AutoSellRare = autoSellRarities.Rare
-        ConfigSystem.CurrentConfig.AutoSellEpic = autoSellRarities.Epic
-        ConfigSystem.CurrentConfig.AutoSellLegendary = autoSellRarities.Legendary
-        ConfigSystem.SaveConfig()
-        
-        -- Hiển thị thông báo
-        local selectedTypes = {}
-        if autoSellRarities.Rare then table.insert(selectedTypes, "Rare") end
-        if autoSellRarities.Epic then table.insert(selectedTypes, "Epic") end
-        if autoSellRarities.Legendary then table.insert(selectedTypes, "Legendary") end
-        
-        if #selectedTypes > 0 then
-            print("Đã bật Auto Sell cho: " .. table.concat(selectedTypes, ", "))
-        else
-            print("Đã tắt Auto Sell")
-        end
-    end
-})
-
--- Nút Summon ngay lập tức
-SummonSection:AddButton({
-    Title = "Summon Now",
-    Callback = function()
-        performSummon()
-    end
-})
-
--- Toggle Auto Summon
-SummonSection:AddToggle("AutoSummonToggle", {
-    Title = "Auto Summon",
-    Default = autoSummonEnabled,
-    Callback = function(Value)
-        autoSummonEnabled = Value
-        ConfigSystem.CurrentConfig.AutoSummon = Value
-        ConfigSystem.SaveConfig()
-        
-        if autoSummonEnabled then
-            print("Auto Summon đã được bật")
-            
-            -- Hủy vòng lặp cũ nếu có
-            if autoSummonLoop then
-                autoSummonLoop:Disconnect()
-                autoSummonLoop = nil
-            end
-            
-            -- Tạo vòng lặp mới
-            spawn(function()
-                while autoSummonEnabled do
-                    -- Thực hiện summon
-                    performSummon()
-                    
-                    -- Đợi 1 giây
-                    wait(1)
-                    
-                    -- Xác định số lần click dựa trên loại summon
-                    local clickCount = selectedSummonAmount == "1" and 2 or 11
-                    print("Đang thực hiện " .. clickCount .. " lần click cho summon " .. selectedSummonAmount)
-                    
-                    -- Thực hiện click theo số lần đã xác định
-                    for i = 1, clickCount do
-                        if not autoSummonEnabled then break end
-                        simulateClick()
-                        wait(0.2) -- Đợi 0.2 giây giữa các lần click
-                    end
-                    
-                    -- Đợi thêm 1 giây trước khi thực hiện summon tiếp theo
-                    wait(1)
+        -- Redeem tất cả code
+        spawn(function()
+            for _, code in ipairs(codes) do
+                local success, err = pcall(function()
+                    local args = {
+                        code
+                    }
+                    game:GetService("ReplicatedStorage"):WaitForChild("Event"):WaitForChild("Codes"):FireServer(unpack(args))
+                end)
+                
+                if success then
+                    print("Đã redeem code: " .. code)
+                else
+                    warn("Lỗi khi redeem code " .. code .. ": " .. tostring(err))
                 end
-            end)
-        else
-            print("Auto Summon đã được tắt")
+                
+                -- Đợi một khoảng thời gian ngắn giữa các lần redeem
+                wait(0.5)
+            end
             
-            -- Hủy vòng lặp nếu có
-            if autoSummonLoop then
-                autoSummonLoop:Disconnect()
-                autoSummonLoop = nil
+            -- Hiển thị thông báo khi đã redeem xong tất cả codes
+            print("Đã redeem tất cả các codes!")
+        end)
+    end
+})
+
+-- Thêm input box cho custom code
+local customCodeInput = nil
+customCodeInput = RedeemSection:AddInput("CustomCodeInput", {
+    Title = "Custom Code",
+    Placeholder = "Nhập code tại đây",
+    Numeric = false,
+    Finished = true,
+    Callback = function(Value)
+        if Value and Value ~= "" then
+            local success, err = pcall(function()
+                local args = {
+                    Value
+                }
+                game:GetService("ReplicatedStorage"):WaitForChild("Event"):WaitForChild("Codes"):FireServer(unpack(args))
+            end)
+            
+            if success then
+                print("Đã redeem code: " .. Value)
+                -- Reset input box sau khi redeem
+                if customCodeInput and customCodeInput.Set then
+                    customCodeInput:Set("")
+                end
+            else
+                warn("Lỗi khi redeem code " .. Value .. ": " .. tostring(err))
             end
         end
     end
@@ -718,7 +545,7 @@ end
 
 -- Thêm event listener để lưu ngay khi thay đổi giá trị
 local function setupSaveEvents()
-    for _, tab in pairs({InfoTab, PlayTab, ShopTab, SettingsTab}) do
+    for _, tab in pairs({InfoTab, PlayTab, SettingsTab}) do
         if tab and tab._components then
             for _, element in pairs(tab._components) do
                 if element and element.OnChanged then
