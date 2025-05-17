@@ -494,7 +494,7 @@ RedeemSection:AddButton({
                 end
                 
                 -- Đợi một khoảng thời gian ngắn giữa các lần redeem
-                wait(0.5)
+                wait(1.5)
             end
             
             -- Hiển thị thông báo khi đã redeem xong tất cả codes
