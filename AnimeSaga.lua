@@ -100,6 +100,12 @@ ConfigSystem.DefaultConfig = {
     SelectedDifficulty = 1,
     AutoJoinStory = false,
     
+    -- Cài đặt Auto Gameplay
+    AutoAttack = false,
+    AutoSkill1 = false,
+    AutoSkill2 = false,
+    AutoSkill3 = false,
+    
     -- Các cài đặt khác sẽ được thêm vào sau
 }
 ConfigSystem.CurrentConfig = {}
@@ -198,6 +204,16 @@ local selectedDifficulty = ConfigSystem.CurrentConfig.SelectedDifficulty or 1
 local autoJoinStoryEnabled = ConfigSystem.CurrentConfig.AutoJoinStory or false
 local autoJoinStoryLoop = nil
 
+-- Biến lưu trạng thái gameplay
+local autoAttackEnabled = ConfigSystem.CurrentConfig.AutoAttack or false
+local autoSkill1Enabled = ConfigSystem.CurrentConfig.AutoSkill1 or false
+local autoSkill2Enabled = ConfigSystem.CurrentConfig.AutoSkill2 or false
+local autoSkill3Enabled = ConfigSystem.CurrentConfig.AutoSkill3 or false
+local autoAttackLoop = nil
+local autoSkill1Loop = nil
+local autoSkill2Loop = nil
+local autoSkill3Loop = nil
+
 -- Tạo Window
 local Window = Fluent:CreateWindow({
     Title = "HT Hub | Anime Saga",
@@ -219,6 +235,12 @@ local InfoTab = Window:AddTab({
 local PlayTab = Window:AddTab({
     Title = "Play",
     Icon = "rbxassetid://7743871480"
+})
+
+-- Tạo tab In-game
+local InGameTab = Window:AddTab({
+    Title = "In-game",
+    Icon = "rbxassetid://7743866529"
 })
 
 -- Thêm hỗ trợ Logo khi minimize
@@ -494,7 +516,7 @@ RedeemSection:AddButton({
                 end
                 
                 -- Đợi một khoảng thời gian ngắn giữa các lần redeem
-                wait(1.5)
+                wait(0.5)
             end
             
             -- Hiển thị thông báo khi đã redeem xong tất cả codes
@@ -545,7 +567,7 @@ end
 
 -- Thêm event listener để lưu ngay khi thay đổi giá trị
 local function setupSaveEvents()
-    for _, tab in pairs({InfoTab, PlayTab, SettingsTab}) do
+    for _, tab in pairs({InfoTab, PlayTab, InGameTab, SettingsTab}) do
         if tab and tab._components then
             for _, element in pairs(tab._components) do
                 if element and element.OnChanged then
@@ -586,3 +608,235 @@ AutoSaveConfig()
 setupSaveEvents()
 
 print("HT Hub | Anime Saga đã được tải thành công!")
+
+-- Thêm section Play trong tab In-game
+local InGamePlaySection = InGameTab:AddSection("Play")
+
+-- Hàm để tìm và click vào nút Attack
+local function clickAttackButton()
+    local success, err = pcall(function()
+        local player = game:GetService("Players").LocalPlayer
+        if not player then return end
+        
+        local playerGui = player:FindFirstChild("PlayerGui")
+        if not playerGui then return end
+        
+        local mobileGui = playerGui:FindFirstChild("Mobile")
+        if not mobileGui then return end
+        
+        local attackButton = mobileGui:FindFirstChild("Attack")
+        if not attackButton then return end
+        
+        -- Click vào nút Attack
+        local events = {"MouseButton1Click", "MouseButton1Down", "Activated"}
+        for _, event in ipairs(events) do
+            for _, connection in pairs(getconnections(attackButton[event])) do
+                connection:Fire()
+            end
+        end
+        
+        print("Đã click vào nút Attack")
+    end)
+    
+    if not success then
+        warn("Lỗi khi click Attack: " .. tostring(err))
+    end
+end
+
+-- Hàm để thực hiện Skill 1
+local function useSkill1()
+    local success, err = pcall(function()
+        local args = {
+            "Skill1",
+            CFrame.new(-390.00030517578125, 163.38278198242188, 1122.468994140625, -0.845065176486969, 0, -0.5346632599830627, 0, 1, 0, 0.5346632599830627, 0, -0.845065176486969),
+            vector.create(-1128.170166015625, -6865.42529296875, 8184.06982421875),
+            "OnSkill"
+        }
+        game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Skill"):FireServer(unpack(args))
+        print("Đã sử dụng Skill 1")
+    end)
+    
+    if not success then
+        warn("Lỗi khi sử dụng Skill 1: " .. tostring(err))
+    end
+end
+
+-- Hàm để thực hiện Skill 2
+local function useSkill2()
+    local success, err = pcall(function()
+        local args = {
+            "Skill2",
+            CFrame.new(-388.95867919921875, 163.37965393066406, 1124.019775390625, -0.8311628699302673, 0, -0.5560290217399597, 0, 1, 0, 0.5560290217399597, 0, -0.8311628699302673),
+            vector.create(-2418.949462890625, -6208.8984375, 8547.421875),
+            "EndHold"
+        }
+        game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Skill"):FireServer(unpack(args))
+        print("Đã sử dụng Skill 2")
+    end)
+    
+    if not success then
+        warn("Lỗi khi sử dụng Skill 2: " .. tostring(err))
+    end
+end
+
+-- Hàm để thực hiện Skill 3
+local function useSkill3()
+    local success, err = pcall(function()
+        local args = {
+            "Skill3",
+            CFrame.new(-390.00030517578125, 163.3827667236328, 1122.4691162109375, -0.8357381820678711, 0, -0.5491281747817993, 0, 1, 0, 0.5491281747817993, 0, -0.8357381820678711),
+            vector.create(-1917.0269775390625, -2864.61767578125, 10521.283203125),
+            "OnSkill"
+        }
+        game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("Skill"):FireServer(unpack(args))
+        print("Đã sử dụng Skill 3")
+    end)
+    
+    if not success then
+        warn("Lỗi khi sử dụng Skill 3: " .. tostring(err))
+    end
+end
+
+-- Toggle Auto Attack
+InGamePlaySection:AddToggle("AutoAttackToggle", {
+    Title = "Auto Attack",
+    Default = autoAttackEnabled,
+    Callback = function(Value)
+        autoAttackEnabled = Value
+        ConfigSystem.CurrentConfig.AutoAttack = Value
+        ConfigSystem.SaveConfig()
+        
+        if autoAttackEnabled then
+            print("Auto Attack đã được bật")
+            
+            -- Hủy vòng lặp cũ nếu có
+            if autoAttackLoop then
+                autoAttackLoop:Disconnect()
+                autoAttackLoop = nil
+            end
+            
+            -- Tạo vòng lặp mới
+            spawn(function()
+                while autoAttackEnabled and wait(0.1) do -- Click mỗi 0.1 giây
+                    clickAttackButton()
+                end
+            end)
+        else
+            print("Auto Attack đã được tắt")
+            
+            -- Hủy vòng lặp nếu có
+            if autoAttackLoop then
+                autoAttackLoop:Disconnect()
+                autoAttackLoop = nil
+            end
+        end
+    end
+})
+
+-- Toggle Auto Skill 1
+InGamePlaySection:AddToggle("AutoSkill1Toggle", {
+    Title = "Auto Skill 1",
+    Default = autoSkill1Enabled,
+    Callback = function(Value)
+        autoSkill1Enabled = Value
+        ConfigSystem.CurrentConfig.AutoSkill1 = Value
+        ConfigSystem.SaveConfig()
+        
+        if autoSkill1Enabled then
+            print("Auto Skill 1 đã được bật")
+            
+            -- Hủy vòng lặp cũ nếu có
+            if autoSkill1Loop then
+                autoSkill1Loop:Disconnect()
+                autoSkill1Loop = nil
+            end
+            
+            -- Tạo vòng lặp mới
+            spawn(function()
+                while autoSkill1Enabled and wait(2) do -- Sử dụng mỗi 2 giây
+                    useSkill1()
+                end
+            end)
+        else
+            print("Auto Skill 1 đã được tắt")
+            
+            -- Hủy vòng lặp nếu có
+            if autoSkill1Loop then
+                autoSkill1Loop:Disconnect()
+                autoSkill1Loop = nil
+            end
+        end
+    end
+})
+
+-- Toggle Auto Skill 2
+InGamePlaySection:AddToggle("AutoSkill2Toggle", {
+    Title = "Auto Skill 2",
+    Default = autoSkill2Enabled,
+    Callback = function(Value)
+        autoSkill2Enabled = Value
+        ConfigSystem.CurrentConfig.AutoSkill2 = Value
+        ConfigSystem.SaveConfig()
+        
+        if autoSkill2Enabled then
+            print("Auto Skill 2 đã được bật")
+            
+            -- Hủy vòng lặp cũ nếu có
+            if autoSkill2Loop then
+                autoSkill2Loop:Disconnect()
+                autoSkill2Loop = nil
+            end
+            
+            -- Tạo vòng lặp mới
+            spawn(function()
+                while autoSkill2Enabled and wait(5) do -- Sử dụng mỗi 5 giây
+                    useSkill2()
+                end
+            end)
+        else
+            print("Auto Skill 2 đã được tắt")
+            
+            -- Hủy vòng lặp nếu có
+            if autoSkill2Loop then
+                autoSkill2Loop:Disconnect()
+                autoSkill2Loop = nil
+            end
+        end
+    end
+})
+
+-- Toggle Auto Skill 3
+InGamePlaySection:AddToggle("AutoSkill3Toggle", {
+    Title = "Auto Skill 3",
+    Default = autoSkill3Enabled,
+    Callback = function(Value)
+        autoSkill3Enabled = Value
+        ConfigSystem.CurrentConfig.AutoSkill3 = Value
+        ConfigSystem.SaveConfig()
+        
+        if autoSkill3Enabled then
+            print("Auto Skill 3 đã được bật")
+            
+            -- Hủy vòng lặp cũ nếu có
+            if autoSkill3Loop then
+                autoSkill3Loop:Disconnect()
+                autoSkill3Loop = nil
+            end
+            
+            -- Tạo vòng lặp mới
+            spawn(function()
+                while autoSkill3Enabled and wait(8) do -- Sử dụng mỗi 8 giây
+                    useSkill3()
+                end
+            end)
+        else
+            print("Auto Skill 3 đã được tắt")
+            
+            -- Hủy vòng lặp nếu có
+            if autoSkill3Loop then
+                autoSkill3Loop:Disconnect()
+                autoSkill3Loop = nil
+            end
+        end
+    end
+})
