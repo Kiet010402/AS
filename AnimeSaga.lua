@@ -95,7 +95,7 @@ ConfigSystem.DefaultConfig = {
     WarningsEnabled = true,
     
     -- Cài đặt Auto Farm
-    SelectedSeed = "Blueberry",
+    SelectedSeed = "Carrot",
     AutoBuySeeds = false,
     AutoSell = false,
     
@@ -272,12 +272,70 @@ AutoFarmSection:AddToggle("AutoSellToggle", {
         
         if Value then
             spawn(function()
-                while autoSellActive and wait(5) do -- Bán mỗi 5 giây
-                    if not autoSellActive then break end -- Kiểm tra lại để tránh trường hợp toggle bị tắt
+                local player = game:GetService("Players").LocalPlayer
+                local character = player.Character or player.CharacterAdded:Wait()
+                local humanoid = character:WaitForChild("Humanoid")
+                local hrp = character:WaitForChild("HumanoidRootPart")
+                
+                -- Lưu lại tốc độ ban đầu
+                local originalWalkSpeed = humanoid.WalkSpeed
+                
+                -- Tìm NPC Steven
+                local stevenNPC = workspace.NPCS:FindFirstChild("Steven")
+                
+                if stevenNPC then
+                    -- Tăng tốc độ di chuyển
+                    humanoid.WalkSpeed = 50
                     
-                    pcall(function()
-                        game:GetService("ReplicatedStorage"):WaitForChild("GameEvents"):WaitForChild("Sell_Inventory"):FireServer()
-                    end)
+                    -- Di chuyển tới NPC Steven
+                    print("Đang di chuyển đến NPC Steven...")
+                    
+                    -- Tính toán khoảng cách và di chuyển
+                    local function moveToNPC()
+                        local npcPosition = stevenNPC:GetPivot().Position
+                        local distance = (hrp.Position - npcPosition).Magnitude
+                        
+                        -- Đặt điểm đến cho nhân vật
+                        humanoid:MoveTo(npcPosition)
+                        
+                        -- Đợi cho đến khi đến đủ gần NPC (trong vòng 5 studs)
+                        local startTime = tick()
+                        local timeout = 30 -- Tối đa 30 giây để di chuyển
+                        
+                        while distance > 10 and (tick() - startTime) < timeout and autoSellActive do
+                            -- Cập nhật khoảng cách
+                            distance = (hrp.Position - npcPosition).Magnitude
+                            wait(0.1)
+                        end
+                        
+                        return distance <= 10
+                    end
+                    
+                    local reachedNPC = moveToNPC()
+                    
+                    -- Khôi phục tốc độ ban đầu
+                    humanoid.WalkSpeed = originalWalkSpeed
+                    
+                    if reachedNPC then
+                        print("Đã đến NPC Steven, bắt đầu tự động bán...")
+                        
+                        -- Bắt đầu auto sell
+                        while autoSellActive and wait(5) do -- Bán mỗi 5 giây
+                            if not autoSellActive then break end -- Kiểm tra lại để tránh trường hợp toggle bị tắt
+                            
+                            pcall(function()
+                                game:GetService("ReplicatedStorage"):WaitForChild("GameEvents"):WaitForChild("Sell_Inventory"):FireServer()
+                            end)
+                        end
+                    else
+                        warn("Không thể đến được NPC Steven!")
+                        -- Tắt toggle nếu không thể đến được NPC
+                        AutoFarmSection:SetValue("AutoSellToggle", false)
+                    end
+                else
+                    warn("Không tìm thấy NPC Steven!")
+                    -- Tắt toggle nếu không tìm thấy NPC
+                    AutoFarmSection:SetValue("AutoSellToggle", false)
                 end
             end)
         end
